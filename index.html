@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rainfall Browser</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-primary: #0a1612;
+      --bg-secondary: #0f1f1a;
+      --bg-tertiary: #152820;
+      --accent-green: #3ac3ab;
+      --accent-green-light: #59cebf;
+      --accent-green-dark: #12ae9a;
+      --text-primary: #e8f5f1;
+      --text-secondary: #a8c5bd;
+      --border-color: #1a3329;
+      --shadow: rgba(0, 0, 0, 0.4);
+    }
+
+    body {
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #0a1612 0%, #0f1f1a 50%, #0a1612 100%);
+      color: var(--text-primary);
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    /* Browser Container */
+    .browser-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      position: relative;
+    }
+
+    /* Top Bar */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      position: relative;
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--accent-green-dark);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .logo:hover {
+      background: var(--accent-green-dark);
+      box-shadow: 0 0 20px rgba(58, 195, 171, 0.3);
+    }
+
+    .logo-icon {
+      width: 18px;
+      height: 18px;
+      background: var(--accent-green);
+      border-radius: 50%;
+      box-shadow: 0 0 10px rgba(58, 195, 171, 0.5);
+    }
+
+    .logo-text {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--accent-green-light);
+      letter-spacing: 0.5px;
+    }
+
+    .new-tab-btn {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      cursor: pointer;
+      color: var(--accent-green);
+      font-size: 20px;
+      transition: all 0.2s ease;
+    }
+
+    .new-tab-btn:hover {
+      background: var(--accent-green-dark);
+      color: var(--text-primary);
+    }
+
+    .spacer {
+      flex: 1;
+    }
+
+    .top-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .user-menu {
+      position: relative;
+    }
+
+    .user-btn {
+      padding: 6px 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      color: var(--accent-green);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .user-btn:hover {
+      background: var(--accent-green-dark);
+      color: var(--text-primary);
+    }
+
+    .menu-btn {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: all 0.2s ease;
+    }
+
+    .menu-btn:hover {
+      background: var(--accent-green-dark);
+      color: var(--text-primary);
+    }
+
+    /* Tabs Bar */
+    .tabs-bar {
+      display: flex;
+      background: var(--bg-secondary);
+      padding: 0 8px;
+      overflow-x: auto;
+      border-bottom: 1px solid var(--border-color);
+      max-width: 100%;
+    }
+
+    .tabs-bar::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    .tabs-bar::-webkit-scrollbar-track {
+      background: var(--bg-primary);
+    }
+
+    .tabs-bar::-webkit-scrollbar-thumb {
+      background: var(--accent-green-dark);
+      border-radius: 2px;
+    }
+
+    .tab {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-bottom: none;
+      border-radius: 6px 6px 0 0;
+      margin: 4px 2px 0 2px;
+      min-width: 200px;
+      max-width: 250px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .tab:hover {
+      background: var(--bg-primary);
+    }
+
+    .tab.active {
+      background: var(--bg-primary);
+      border-color: var(--accent-green-dark);
+      box-shadow: 0 -2px 10px rgba(58, 195, 171, 0.2);
+    }
+
+    .tab-title {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .tab.active .tab-title {
+      color: var(--text-primary);
+    }
+
+    .tab-close {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 3px;
+      color: var(--text-secondary);
+      font-size: 16px;
+      transition: all 0.2s ease;
+    }
+
+    .tab-close:hover {
+      background: rgba(255, 0, 0, 0.2);
+      color: #ff4444;
+    }
+
+    /* Navigation Bar */
+    .nav-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .nav-controls {
+      display: flex;
+      gap: 4px;
+    }
+
+    .nav-btn {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: all 0.2s ease;
+      font-size: 18px;
+    }
+
+    .nav-btn:hover:not(:disabled) {
+      background: var(--accent-green-dark);
+      color: var(--text-primary);
+      box-shadow: 0 0 15px rgba(58, 195, 171, 0.3);
+    }
+
+    .nav-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .url-bar-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0 12px;
+      transition: all 0.3s ease;
+    }
+
+    .url-bar-container:focus-within {
+      border-color: var(--accent-green);
+      box-shadow: 0 0 20px rgba(58, 195, 171, 0.2);
+    }
+
+    .url-bar {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      padding: 10px 0;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .url-bar::placeholder {
+      color: var(--text-secondary);
+    }
+
+    .bookmark-btn {
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 20px;
+      transition: all 0.2s ease;
+    }
+
+    .bookmark-btn:hover,
+    .bookmark-btn.bookmarked {
+      color: var(--accent-green);
+    }
+
+    /* Content Area */
+    .content-area {
+      flex: 1;
+      background: var(--bg-primary);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .browser-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: white;
+    }
+
+    /* Dropdown Menu */
+    .dropdown-menu {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      margin-top: 8px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 8px;
+      min-width: 220px;
+      box-shadow: 0 4px 20px var(--shadow);
+      z-index: 1000;
+      display: none;
+    }
+
+    .dropdown-menu.active {
+      display: block;
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: var(--text-primary);
+      font-size: 14px;
+    }
+
+    .menu-item:hover {
+      background: var(--accent-green-dark);
+    }
+
+    .menu-item-icon {
+      font-size: 18px;
+      color: var(--accent-green);
+    }
+
+    .menu-divider {
+      height: 1px;
+      background: var(--border-color);
+      margin: 6px 0;
+    }
+
+    /* Modal */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      backdrop-filter: blur(4px);
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 8px 40px var(--shadow);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .modal-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--accent-green);
+    }
+
+    .modal-close {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-tertiary);
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      font-size: 20px;
+      transition: all 0.2s ease;
+    }
+
+    .modal-close:hover {
+      background: rgba(255, 0, 0, 0.2);
+      color: #ff4444;
+    }
+
+    .modal-body {
+      color: var(--text-secondary);
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: 'Outfit', sans-serif;
+      transition: all 0.3s ease;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--accent-green);
+      box-shadow: 0 0 15px rgba(58, 195, 171, 0.2);
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 12px;
+      background: var(--accent-green);
+      border: none;
+      border-radius: 6px;
+      color: var(--bg-primary);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-green-light);
+      box-shadow: 0 4px 20px rgba(58, 195, 171, 0.4);
+    }
+
+    .bookmarks-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .bookmark-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: var(--bg-tertiary);
+      border-radius: 6px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .bookmark-item:hover {
+      background: var(--accent-green-dark);
+    }
+
+    .bookmark-info {
+      flex: 1;
+    }
+
+    .bookmark-name {
+      font-size: 14px;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .bookmark-url {
+      font-size: 12px;
+      color: var(--text-secondary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .bookmark-delete {
+      padding: 6px 10px;
+      background: rgba(255, 0, 0, 0.2);
+      border: none;
+      border-radius: 4px;
+      color: #ff4444;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.2s ease;
+    }
+
+    .bookmark-delete:hover {
+      background: rgba(255, 0, 0, 0.4);
+    }
+
+    /* Cloak Settings */
+    .cloak-preview {
+      padding: 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      margin-top: 12px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+  </style>
+</head>
+<body>
+  <div class="browser-container">
+    <!-- Top Bar -->
+    <div class="top-bar">
+      <div class="logo">
+        <div class="logo-icon"></div>
+        <span class="logo-text">RAINFALL</span>
+      </div>
+      <button class="new-tab-btn" onclick="createNewTab()">+</button>
+      <div class="spacer"></div>
+      <div class="top-controls">
+        <div class="user-menu">
+          <button class="user-btn" onclick="toggleMenu()">
+            <span>Menu</span>
+            <span>▼</span>
+          </button>
+          <div class="dropdown-menu" id="mainMenu">
+            <div class="menu-item" onclick="showBookmarks()">
+              <span class="menu-item-icon">★</span>
+              <span>Bookmarks</span>
+            </div>
+            <div class="menu-item" onclick="openDevTools()">
+              <span class="menu-item-icon">⚙</span>
+              <span>DevTools</span>
+            </div>
+            <div class="menu-item" onclick="showCloakSettings()">
+              <span class="menu-item-icon">🎭</span>
+              <span>Cloak</span>
+            </div>
+            <div class="menu-item" onclick="toggleFullscreen()">
+              <span class="menu-item-icon">⛶</span>
+              <span>Fullscreen</span>
+            </div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" onclick="showSettings()">
+              <span class="menu-item-icon">⚙</span>
+              <span>Settings</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs Bar -->
+    <div class="tabs-bar" id="tabsBar"></div>
+
+    <!-- Navigation Bar -->
+    <div class="nav-bar">
+      <div class="nav-controls">
+        <button class="nav-btn" id="backBtn" onclick="goBack()" disabled>←</button>
+        <button class="nav-btn" id="forwardBtn" onclick="goForward()" disabled>→</button>
+        <button class="nav-btn" onclick="reloadPage()">⟳</button>
+      </div>
+      <div class="url-bar-container">
+        <input 
+          type="text" 
+          class="url-bar" 
+          id="urlBar" 
+          placeholder="Search or enter a URL..."
+          onkeypress="handleUrlBarEnter(event)"
+        >
+        <span class="bookmark-btn" id="bookmarkBtn" onclick="toggleBookmark()">☆</span>
+      </div>
+    </div>
+
+    <!-- Content Area -->
+    <div class="content-area" id="contentArea"></div>
+
+    <!-- Bookmarks Modal -->
+    <div class="modal" id="bookmarksModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">Bookmarks</h2>
+          <button class="modal-close" onclick="closeModal('bookmarksModal')">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="bookmarks-list" id="bookmarksList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cloak Settings Modal -->
+    <div class="modal" id="cloakModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">Cloak Settings</h2>
+          <button class="modal-close" onclick="closeModal('cloakModal')">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Page Title</label>
+            <input type="text" class="form-input" id="cloakTitle" placeholder="Enter page title">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Favicon URL</label>
+            <input type="text" class="form-input" id="cloakFavicon" placeholder="Enter favicon URL">
+          </div>
+          <button class="btn-primary" onclick="applyCloak()">Apply Cloak</button>
+          <div class="cloak-preview" id="cloakPreview">
+            Current: <span id="currentTitle">Rainfall Browser</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">Settings</h2>
+          <button class="modal-close" onclick="closeModal('settingsModal')">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Bare Server URL</label>
+            <input type="text" class="form-input" id="bareServerUrl" placeholder="https://example.com/bare/">
+          </div>
+          <button class="btn-primary" onclick="saveBareServer()">Save Settings</button>
+          <div class="cloak-preview" style="margin-top: 16px;">
+            Note: Changing the bare server requires a page reload to take effect.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="uv/uv.bundle.js"></script>
+  <script src="uv/uv.config.js"></script>
+  <script src="register-sw.js"></script>
+  <script>
+    // Browser State
+    let tabs = [];
+    let activeTabId = null;
+    let tabCounter = 0;
+    let bookmarks = JSON.parse(localStorage.getItem('rainfall_bookmarks') || '[]');
+
+    // Initialize
+    window.onload = () => {
+      loadBareServerSetting();
+      createNewTab();
+    };
+
+    // Tab Management
+    function createNewTab(url = 'embed.html#https://hyperion-assets.vercel.app/') {
+      const tabId = ++tabCounter;
+      const tab = {
+        id: tabId,
+        url: url,
+        title: 'New Tab',
+        history: [url],
+        historyIndex: 0
+      };
+      
+      tabs.push(tab);
+      renderTabs();
+      switchToTab(tabId);
+    }
+
+    function closeTab(tabId) {
+      const index = tabs.findIndex(t => t.id === tabId);
+      if (index === -1) return;
+      
+      tabs.splice(index, 1);
+      
+      if (tabs.length === 0) {
+        createNewTab();
+      } else if (activeTabId === tabId) {
+        const newIndex = Math.min(index, tabs.length - 1);
+        switchToTab(tabs[newIndex].id);
+      } else {
+        renderTabs();
+      }
+    }
+
+    function switchToTab(tabId) {
+      activeTabId = tabId;
+      renderTabs();
+      renderContent();
+      updateNavButtons();
+      updateUrlBar();
+      updateBookmarkButton();
+    }
+
+    function renderTabs() {
+      const tabsBar = document.getElementById('tabsBar');
+      tabsBar.innerHTML = tabs.map(tab => `
+        <div class="tab ${tab.id === activeTabId ? 'active' : ''}" onclick="switchToTab(${tab.id})">
+          <span class="tab-title">${escapeHtml(tab.title)}</span>
+          <span class="tab-close" onclick="event.stopPropagation(); closeTab(${tab.id})">×</span>
+        </div>
+      `).join('');
+    }
+
+    function renderContent() {
+      const contentArea = document.getElementById('contentArea');
+      const activeTab = tabs.find(t => t.id === activeTabId);
+      
+      if (!activeTab) return;
+      
+      contentArea.innerHTML = `
+        <iframe class="browser-frame" id="browserFrame" src="${activeTab.url}"></iframe>
+      `;
+      
+      const iframe = document.getElementById('browserFrame');
+      iframe.onload = () => {
+        try {
+          const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+          if (iframeDoc && iframeDoc.title) {
+            activeTab.title = iframeDoc.title || 'New Tab';
+            renderTabs();
+          }
+        } catch (e) {
+          // Cross-origin - can't access title
+        }
+      };
+    }
+
+    // Navigation
+    function goBack() {
+      const activeTab = tabs.find(t => t.id === activeTabId);
+      if (!activeTab || activeTab.historyIndex === 0) return;
+      
+      activeTab.historyIndex--;
+      activeTab.url = activeTab.history[activeTab.historyIndex];
+      renderContent();
+      updateNavButtons();
+      updateUrlBar();
+    }
+
+    function goForward() {
+      const activeTab = tabs.find(t => t.id === activeTabId);
+      if (!activeTab || activeTab.historyIndex >= activeTab.history.length - 1) return;
+      
+      activeTab.historyIndex++;
+      activeTab.url = activeTab.history[activeTab.historyIndex];
+      renderContent();
+      updateNavButtons();
+      updateUrlBar();
+    }
+
+    function reloadPage() {
+      const iframe = document.getElementById('browserFrame');
+      if (iframe) {
+        iframe.src = iframe.src;
+      }
+    }
+
+    function updateNavButtons() {
+      const activeTab = tabs.find(t => t.id === activeTabId);
+      document.getElementById('backBtn').disabled = !activeTab || activeTab.historyIndex === 0;
+      document.getElementById('forwardBtn').disabled = !activeTab || activeTab.historyIndex >= activeTab.history.length - 1;
+    }
+
+    function handleUrlBarEnter(event) {
+      if (event.key === 'Enter') {
+        navigateToUrl(event.target.value);
+      }
+    }
+
+    function navigateToUrl(input) {
+      const activeTab = tabs.find(t => t.id === activeTabId);
+      if (!activeTab) return;
+      
+      let url = input.trim();
+      
+      // Check if it's a URL or search query
+      if (!url.includes('.') && !url.startsWith('http')) {
+        url = 'https://www.google.com/search?q=' + encodeURIComponent(url);
+      } else if (!url.startsWith('http')) {
+        url = 'https://' + url;
+      }
+      
+      const embedUrl = 'embed.html#' + url;
+      
+      // Update history
+      activeTab.history = activeTab.history.slice(0, activeTab.historyIndex + 1);
+      activeTab.history.push(embedUrl);
+      activeTab.historyIndex++;
+      activeTab.url = embedUrl;
+      
+      renderContent();
+      updateNavButtons();
+      updateUrlBar();
+    }
+
+    function updateUrlBar() {
+      const activeTab = tabs.find(t => t.id === activeTabId);
+      const urlBar = document.getElementById('urlBar');
+      
+      if (activeTab) {
+        const url = activeTab.url.replace('embed.html#', '');
+        urlBar.value = url;
+      }
+    }
+
+    // Bookmarks
+    function toggleBookmark() {
+      const activeTab = tabs.find(t => t.id === activeTabId);
+      if (!activeTab) return;
+      
+      const url = activeTab.url.replace('embed.html#', '');
+      const existingIndex = bookmarks.findIndex(b => b.url === url);
+      
+      if (existingIndex >= 0) {
+        bookmarks.splice(existingIndex, 1);
+      } else {
+        bookmarks.push({
+          name: activeTab.title,
+          url: url
+        });
+      }
+      
+      localStorage.setItem('rainfall_bookmarks', JSON.stringify(bookmarks));
+      updateBookmarkButton();
+    }
+
+    function updateBookmarkButton() {
+      const activeTab = tabs.find(t => t.id === activeTabId);
+      const bookmarkBtn = document.getElementById('bookmarkBtn');
+      
+      if (activeTab) {
+        const url = activeTab.url.replace('embed.html#', '');
+        const isBookmarked = bookmarks.some(b => b.url === url);
+        bookmarkBtn.textContent = isBookmarked ? '★' : '☆';
+        bookmarkBtn.classList.toggle('bookmarked', isBookmarked);
+      }
+    }
+
+    function showBookmarks() {
+      closeAllMenus();
+      const bookmarksList = document.getElementById('bookmarksList');
+      
+      if (bookmarks.length === 0) {
+        bookmarksList.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 20px;">No bookmarks yet</p>';
+      } else {
+        bookmarksList.innerHTML = bookmarks.map((bookmark, index) => `
+          <div class="bookmark-item" onclick="navigateToBookmark('${escapeHtml(bookmark.url)}')">
+            <div class="bookmark-info">
+              <div class="bookmark-name">${escapeHtml(bookmark.name)}</div>
+              <div class="bookmark-url">${escapeHtml(bookmark.url)}</div>
+            </div>
+            <button class="bookmark-delete" onclick="event.stopPropagation(); deleteBookmark(${index})">Delete</button>
+          </div>
+        `).join('');
+      }
+      
+      document.getElementById('bookmarksModal').classList.add('active');
+    }
+
+    function navigateToBookmark(url) {
+      closeModal('bookmarksModal');
+      navigateToUrl(url);
+    }
+
+    function deleteBookmark(index) {
+      bookmarks.splice(index, 1);
+      localStorage.setItem('rainfall_bookmarks', JSON.stringify(bookmarks));
+      showBookmarks();
+      updateBookmarkButton();
+    }
+
+    // Cloak
+    function showCloakSettings() {
+      closeAllMenus();
+      document.getElementById('cloakTitle').value = localStorage.getItem('rainfall_cloak_title') || '';
+      document.getElementById('cloakFavicon').value = localStorage.getItem('rainfall_cloak_favicon') || '';
+      document.getElementById('currentTitle').textContent = document.title;
+      document.getElementById('cloakModal').classList.add('active');
+    }
+
+    function applyCloak() {
+      const title = document.getElementById('cloakTitle').value;
+      const favicon = document.getElementById('cloakFavicon').value;
+      
+      if (title) {
+        document.title = title;
+        localStorage.setItem('rainfall_cloak_title', title);
+      }
+      
+      if (favicon) {
+        let link = document.querySelector("link[rel*='icon']");
+        if (!link) {
+          link = document.createElement('link');
+          link.rel = 'icon';
+          document.head.appendChild(link);
+        }
+        link.href = favicon;
+        localStorage.setItem('rainfall_cloak_favicon', favicon);
+      }
+      
+      document.getElementById('currentTitle').textContent = document.title;
+      alert('Cloak applied successfully!');
+    }
+
+    // Load cloak on startup
+    window.addEventListener('load', () => {
+      const savedTitle = localStorage.getItem('rainfall_cloak_title');
+      const savedFavicon = localStorage.getItem('rainfall_cloak_favicon');
+      
+      if (savedTitle) document.title = savedTitle;
+      if (savedFavicon) {
+        let link = document.querySelector("link[rel*='icon']");
+        if (!link) {
+          link = document.createElement('link');
+          link.rel = 'icon';
+          document.head.appendChild(link);
+        }
+        link.href = savedFavicon;
+      }
+    });
+
+    // DevTools
+    function openDevTools() {
+      closeAllMenus();
+      const iframe = document.getElementById('browserFrame');
+      if (iframe) {
+        try {
+          const iframeWindow = iframe.contentWindow;
+          iframeWindow.eval('console.log("DevTools opened via Rainfall Browser")');
+          alert('Open your browser DevTools (F12) to inspect the embedded page.');
+        } catch (e) {
+          alert('Cannot access DevTools for this page due to cross-origin restrictions.');
+        }
+      }
+    }
+
+    // Fullscreen
+    function toggleFullscreen() {
+      closeAllMenus();
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    // Settings
+    function showSettings() {
+      closeAllMenus();
+      const currentBare = localStorage.getItem('rainfall_bare_server') || self.__uv$config.bare;
+      document.getElementById('bareServerUrl').value = currentBare;
+      document.getElementById('settingsModal').classList.add('active');
+    }
+
+    function saveBareServer() {
+      const bareUrl = document.getElementById('bareServerUrl').value.trim();
+      if (bareUrl) {
+        localStorage.setItem('rainfall_bare_server', bareUrl);
+        
+        // Update the config
+        self.__uv$config.bare = bareUrl;
+        
+        alert('Bare server updated! Please reload the page for changes to take effect.');
+        closeModal('settingsModal');
+      }
+    }
+
+    function loadBareServerSetting() {
+      const savedBare = localStorage.getItem('rainfall_bare_server');
+      if (savedBare && self.__uv$config) {
+        self.__uv$config.bare = savedBare;
+      }
+    }
+
+    // Menu
+    function toggleMenu() {
+      const menu = document.getElementById('mainMenu');
+      menu.classList.toggle('active');
+    }
+
+    function closeAllMenus() {
+      document.querySelectorAll('.dropdown-menu').forEach(menu => {
+        menu.classList.remove('active');
+      });
+    }
+
+    // Modal
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.remove('active');
+    }
+
+    // Click outside to close
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.user-menu')) {
+        closeAllMenus();
+      }
+      
+      if (e.target.classList.contains('modal')) {
+        e.target.classList.remove('active');
+      }
+    });
+
+    // Utility
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>
