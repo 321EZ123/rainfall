@@ -620,10 +620,10 @@
         <button class="nav-btn" onclick="reloadPage()">⟳</button>
       </div>
       <div class="url-bar-container">
-        <input 
-          type="text" 
-          class="url-bar" 
-          id="urlBar" 
+        <input
+          type="text"
+          class="url-bar"
+          id="urlBar"
           placeholder="Search or enter a URL..."
           onkeypress="handleUrlBarEnter(event)"
         >
@@ -701,12 +701,97 @@
     let activeTabId = null;
     let tabCounter = 0;
     let bookmarks = JSON.parse(localStorage.getItem('rainfall_bookmarks') || '[]');
+    let isUrlBarFocused = false;
 
     // Initialize
     window.onload = () => {
       loadBareServerSetting();
       createNewTab();
+      initUrlBarListeners();
+      startUrlSync();
     };
+
+    // URL Bar Focus Tracking
+    function initUrlBarListeners() {
+      const urlBar = document.getElementById('urlBar');
+      urlBar.addEventListener('focus', () => {
+        isUrlBarFocused = true;
+      });
+      urlBar.addEventListener('blur', () => {
+        isUrlBarFocused = false;
+      });
+    }
+
+    // Continuously sync URL bar with iframe content
+    function startUrlSync() {
+      setInterval(() => {
+        if (!isUrlBarFocused) {
+          syncUrlFromIframe();
+        }
+      }, 500); // Check every 500ms
+    }
+
+    function syncUrlFromIframe() {
+      const activeTab = tabs.find(t => t.id === activeTabId);
+      if (!activeTab) return;
+
+      const iframe = document.getElementById('browserFrame');
+      if (!iframe) return;
+
+      try {
+        // Try to get the iframe's current location
+        let iframeSrc = iframe.contentWindow.location.href;
+
+        // Extract the actual URL from the embed URL
+        if (iframeSrc.includes('embed.html#')) {
+          const actualUrl = iframeSrc.split('embed.html#')[1];
+          if (actualUrl) {
+            // Decode the proxied URL
+            const urlBar = document.getElementById('urlBar');
+            const decodedUrl = decodeProxiedUrl(actualUrl);
+
+            // Only update if different from current value
+            if (urlBar.value !== decodedUrl) {
+              urlBar.value = decodedUrl;
+
+              // Update tab URL if it changed
+              const newEmbedUrl = 'embed.html#' + actualUrl;
+              if (activeTab.url !== newEmbedUrl) {
+                activeTab.url = newEmbedUrl;
+                updateBookmarkButton();
+              }
+            }
+          }
+        }
+      } catch (e) {
+        // Cross-origin error - can't access iframe location
+        // This is expected for proxied content
+      }
+    }
+
+    function decodeProxiedUrl(proxiedUrl) {
+      try {
+        // Check if it's a proxied URL (contains the prefix)
+        if (proxiedUrl.includes('/static/insanity/')) {
+          // Extract the encoded part after the prefix
+          const parts = proxiedUrl.split('/static/insanity/');
+          if (parts.length > 1) {
+            const encoded = parts[1];
+            // Try to decode using UV's decoder if available
+            if (typeof Ultraviolet !== 'undefined' && Ultraviolet.codec && Ultraviolet.codec.xor) {
+              try {
+                return Ultraviolet.codec.xor.decode(encoded);
+              } catch (e) {
+                return proxiedUrl;
+              }
+            }
+          }
+        }
+        return proxiedUrl;
+      } catch (e) {
+        return proxiedUrl;
+      }
+    }
 
     // Tab Management
     function createNewTab(url = 'embed.html#https://hyperion-assets.vercel.app/') {
@@ -718,7 +803,7 @@
         history: [url],
         historyIndex: 0
       };
-      
+
       tabs.push(tab);
       renderTabs();
       switchToTab(tabId);
@@ -727,9 +812,9 @@
     function closeTab(tabId) {
       const index = tabs.findIndex(t => t.id === tabId);
       if (index === -1) return;
-      
+
       tabs.splice(index, 1);
-      
+
       if (tabs.length === 0) {
         createNewTab();
       } else if (activeTabId === tabId) {
@@ -762,13 +847,13 @@
     function renderContent() {
       const contentArea = document.getElementById('contentArea');
       const activeTab = tabs.find(t => t.id === activeTabId);
-      
+
       if (!activeTab) return;
-      
+
       contentArea.innerHTML = `
         <iframe class="browser-frame" id="browserFrame" src="${activeTab.url}"></iframe>
       `;
-      
+
       const iframe = document.getElementById('browserFrame');
       iframe.onload = () => {
         try {
@@ -787,7 +872,7 @@
     function goBack() {
       const activeTab = tabs.find(t => t.id === activeTabId);
       if (!activeTab || activeTab.historyIndex === 0) return;
-      
+
       activeTab.historyIndex--;
       activeTab.url = activeTab.history[activeTab.historyIndex];
       renderContent();
@@ -798,7 +883,7 @@
     function goForward() {
       const activeTab = tabs.find(t => t.id === activeTabId);
       if (!activeTab || activeTab.historyIndex >= activeTab.history.length - 1) return;
-      
+
       activeTab.historyIndex++;
       activeTab.url = activeTab.history[activeTab.historyIndex];
       renderContent();
@@ -828,24 +913,24 @@
     function navigateToUrl(input) {
       const activeTab = tabs.find(t => t.id === activeTabId);
       if (!activeTab) return;
-      
+
       let url = input.trim();
-      
+
       // Check if it's a URL or search query
       if (!url.includes('.') && !url.startsWith('http')) {
-        url = 'https://www.google.com/search?q=' + encodeURIComponent(url);
+        url = 'https://duckduckgo.com/?q=' + encodeURIComponent(url);
       } else if (!url.startsWith('http')) {
         url = 'https://' + url;
       }
-      
+
       const embedUrl = 'embed.html#' + url;
-      
+
       // Update history
       activeTab.history = activeTab.history.slice(0, activeTab.historyIndex + 1);
       activeTab.history.push(embedUrl);
       activeTab.historyIndex++;
       activeTab.url = embedUrl;
-      
+
       renderContent();
       updateNavButtons();
       updateUrlBar();
@@ -854,7 +939,7 @@
     function updateUrlBar() {
       const activeTab = tabs.find(t => t.id === activeTabId);
       const urlBar = document.getElementById('urlBar');
-      
+
       if (activeTab) {
         const url = activeTab.url.replace('embed.html#', '');
         urlBar.value = url;
@@ -865,10 +950,10 @@
     function toggleBookmark() {
       const activeTab = tabs.find(t => t.id === activeTabId);
       if (!activeTab) return;
-      
+
       const url = activeTab.url.replace('embed.html#', '');
       const existingIndex = bookmarks.findIndex(b => b.url === url);
-      
+
       if (existingIndex >= 0) {
         bookmarks.splice(existingIndex, 1);
       } else {
@@ -877,7 +962,7 @@
           url: url
         });
       }
-      
+
       localStorage.setItem('rainfall_bookmarks', JSON.stringify(bookmarks));
       updateBookmarkButton();
     }
@@ -885,7 +970,7 @@
     function updateBookmarkButton() {
       const activeTab = tabs.find(t => t.id === activeTabId);
       const bookmarkBtn = document.getElementById('bookmarkBtn');
-      
+
       if (activeTab) {
         const url = activeTab.url.replace('embed.html#', '');
         const isBookmarked = bookmarks.some(b => b.url === url);
@@ -897,7 +982,7 @@
     function showBookmarks() {
       closeAllMenus();
       const bookmarksList = document.getElementById('bookmarksList');
-      
+
       if (bookmarks.length === 0) {
         bookmarksList.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 20px;">No bookmarks yet</p>';
       } else {
@@ -911,7 +996,7 @@
           </div>
         `).join('');
       }
-      
+
       document.getElementById('bookmarksModal').classList.add('active');
     }
 
@@ -939,12 +1024,12 @@
     function applyCloak() {
       const title = document.getElementById('cloakTitle').value;
       const favicon = document.getElementById('cloakFavicon').value;
-      
+
       if (title) {
         document.title = title;
         localStorage.setItem('rainfall_cloak_title', title);
       }
-      
+
       if (favicon) {
         let link = document.querySelector("link[rel*='icon']");
         if (!link) {
@@ -955,7 +1040,7 @@
         link.href = favicon;
         localStorage.setItem('rainfall_cloak_favicon', favicon);
       }
-      
+
       document.getElementById('currentTitle').textContent = document.title;
       alert('Cloak applied successfully!');
     }
@@ -964,7 +1049,7 @@
     window.addEventListener('load', () => {
       const savedTitle = localStorage.getItem('rainfall_cloak_title');
       const savedFavicon = localStorage.getItem('rainfall_cloak_favicon');
-      
+
       if (savedTitle) document.title = savedTitle;
       if (savedFavicon) {
         let link = document.querySelector("link[rel*='icon']");
@@ -1014,10 +1099,10 @@
       const bareUrl = document.getElementById('bareServerUrl').value.trim();
       if (bareUrl) {
         localStorage.setItem('rainfall_bare_server', bareUrl);
-        
+
         // Update the config
         self.__uv$config.bare = bareUrl;
-        
+
         alert('Bare server updated! Please reload the page for changes to take effect.');
         closeModal('settingsModal');
       }
@@ -1052,7 +1137,7 @@
       if (!e.target.closest('.user-menu')) {
         closeAllMenus();
       }
-      
+
       if (e.target.classList.contains('modal')) {
         e.target.classList.remove('active');
       }
