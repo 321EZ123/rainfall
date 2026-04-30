@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
   <title>Rainfall Browser</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
@@ -728,7 +729,7 @@
         if (!isUrlBarFocused) {
           syncUrlFromIframe();
         }
-      }, 500); // Check every 500ms
+      }, 100); // Check more frequently (every 100ms instead of 500ms)
     }
 
     function syncUrlFromIframe() {
@@ -742,19 +743,43 @@
         // Try to get the iframe's current location
         let iframeSrc = iframe.contentWindow.location.href;
 
-        // Extract the actual URL from the embed URL
-        if (iframeSrc.includes('embed.html#')) {
-          const actualUrl = iframeSrc.split('embed.html#')[1];
-          if (actualUrl) {
-            // Decode the proxied URL
+        // Extract the actual URL from the proxied URL
+        if (iframeSrc.includes('/rainfall/')) {
+          // Get the encoded URL part after the prefix
+          const parts = iframeSrc.split('/rainfall/');
+          if (parts.length > 1) {
+            const encodedUrl = parts[1];
+            const decodedUrl = decodeProxiedUrl(encodedUrl);
             const urlBar = document.getElementById('urlBar');
-            const decodedUrl = decodeProxiedUrl(actualUrl);
 
             // Only update if different from current value
-            if (urlBar.value !== decodedUrl) {
+            if (decodedUrl && urlBar.value !== decodedUrl) {
               urlBar.value = decodedUrl;
 
-              // Update tab URL if it changed
+              // Update tab URL and title
+              const newEmbedUrl = 'embed.html#' + decodedUrl;
+              if (activeTab.url !== newEmbedUrl) {
+                activeTab.url = newEmbedUrl;
+
+                // Update history if needed
+                if (activeTab.history[activeTab.historyIndex] !== newEmbedUrl) {
+                  activeTab.history = activeTab.history.slice(0, activeTab.historyIndex + 1);
+                  activeTab.history.push(newEmbedUrl);
+                  activeTab.historyIndex++;
+                  updateNavButtons();
+                }
+
+                updateBookmarkButton();
+              }
+            }
+          }
+        } else if (iframeSrc.includes('embed.html#')) {
+          // Handle embed.html URLs
+          const actualUrl = iframeSrc.split('embed.html#')[1];
+          if (actualUrl) {
+            const urlBar = document.getElementById('urlBar');
+            if (urlBar.value !== actualUrl) {
+              urlBar.value = actualUrl;
               const newEmbedUrl = 'embed.html#' + actualUrl;
               if (activeTab.url !== newEmbedUrl) {
                 activeTab.url = newEmbedUrl;
@@ -764,32 +789,41 @@
           }
         }
       } catch (e) {
-        // Cross-origin error - can't access iframe location
-        // This is expected for proxied content
-      }
-    }
-
-    function decodeProxiedUrl(proxiedUrl) {
-      try {
-        // Check if it's a proxied URL (contains the prefix)
-        if (proxiedUrl.includes('/static/insanity/')) {
-          // Extract the encoded part after the prefix
-          const parts = proxiedUrl.split('/static/insanity/');
-          if (parts.length > 1) {
-            const encoded = parts[1];
-            // Try to decode using UV's decoder if available
-            if (typeof Ultraviolet !== 'undefined' && Ultraviolet.codec && Ultraviolet.codec.xor) {
-              try {
-                return Ultraviolet.codec.xor.decode(encoded);
-              } catch (e) {
-                return proxiedUrl;
+        // Cross-origin error - try alternative method
+        // Monitor iframe src attribute changes
+        try {
+          const iframeSrc = iframe.getAttribute('src');
+          if (iframeSrc && iframeSrc.includes('embed.html#')) {
+            const actualUrl = iframeSrc.split('embed.html#')[1];
+            if (actualUrl) {
+              const urlBar = document.getElementById('urlBar');
+              const decodedUrl = decodeURIComponent(actualUrl);
+              if (urlBar.value !== decodedUrl) {
+                urlBar.value = decodedUrl;
               }
             }
           }
+        } catch (err) {
+          // Silently fail
         }
-        return proxiedUrl;
+      }
+    }
+
+    function decodeProxiedUrl(encodedUrl) {
+      try {
+        // Try to decode using UV's XOR decoder
+        if (typeof Ultraviolet !== 'undefined' && Ultraviolet.codec && Ultraviolet.codec.xor) {
+          try {
+            const decoded = Ultraviolet.codec.xor.decode(encodedUrl);
+            return decoded;
+          } catch (e) {
+            // If XOR decode fails, return the encoded URL
+            return encodedUrl;
+          }
+        }
+        return encodedUrl;
       } catch (e) {
-        return proxiedUrl;
+        return encodedUrl;
       }
     }
 
