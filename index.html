@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="referrer" content="no-referrer">
+  <link rel="icon" type="image/png" href="favicon.png">
   <title>Rainfall Browser</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
@@ -697,14 +698,12 @@
   <script src="uv/uv.config.js"></script>
   <script src="register-sw.js"></script>
   <script>
-    // Browser State
     let tabs = [];
     let activeTabId = null;
     let tabCounter = 0;
     let bookmarks = JSON.parse(localStorage.getItem('rainfall_bookmarks') || '[]');
     let isUrlBarFocused = false;
 
-    // Initialize
     window.onload = () => {
       loadBareServerSetting();
       createNewTab();
@@ -712,7 +711,6 @@
       startUrlSync();
     };
 
-    // URL Bar Focus Tracking
     function initUrlBarListeners() {
       const urlBar = document.getElementById('urlBar');
       urlBar.addEventListener('focus', () => {
@@ -723,13 +721,12 @@
       });
     }
 
-    // Continuously sync URL bar with iframe content
     function startUrlSync() {
       setInterval(() => {
         if (!isUrlBarFocused) {
           syncUrlFromIframe();
         }
-      }, 100); // Check more frequently (every 100ms instead of 500ms)
+      }, 100); 
     }
 
     function syncUrlFromIframe() {
@@ -740,28 +737,22 @@
       if (!iframe) return;
 
       try {
-        // Try to get the iframe's current location
         let iframeSrc = iframe.contentWindow.location.href;
 
-        // Extract the actual URL from the proxied URL
         if (iframeSrc.includes('/rainfall/')) {
-          // Get the encoded URL part after the prefix
           const parts = iframeSrc.split('/rainfall/');
           if (parts.length > 1) {
             const encodedUrl = parts[1];
             const decodedUrl = decodeProxiedUrl(encodedUrl);
             const urlBar = document.getElementById('urlBar');
 
-            // Only update if different from current value
             if (decodedUrl && urlBar.value !== decodedUrl) {
               urlBar.value = decodedUrl;
 
-              // Update tab URL and title
               const newEmbedUrl = 'embed.html#' + decodedUrl;
               if (activeTab.url !== newEmbedUrl) {
                 activeTab.url = newEmbedUrl;
 
-                // Update history if needed
                 if (activeTab.history[activeTab.historyIndex] !== newEmbedUrl) {
                   activeTab.history = activeTab.history.slice(0, activeTab.historyIndex + 1);
                   activeTab.history.push(newEmbedUrl);
@@ -774,7 +765,6 @@
             }
           }
         } else if (iframeSrc.includes('embed.html#')) {
-          // Handle embed.html URLs
           const actualUrl = iframeSrc.split('embed.html#')[1];
           if (actualUrl) {
             const urlBar = document.getElementById('urlBar');
@@ -789,8 +779,6 @@
           }
         }
       } catch (e) {
-        // Cross-origin error - try alternative method
-        // Monitor iframe src attribute changes
         try {
           const iframeSrc = iframe.getAttribute('src');
           if (iframeSrc && iframeSrc.includes('embed.html#')) {
@@ -804,20 +792,17 @@
             }
           }
         } catch (err) {
-          // Silently fail
         }
       }
     }
 
     function decodeProxiedUrl(encodedUrl) {
       try {
-        // Try to decode using UV's XOR decoder
         if (typeof Ultraviolet !== 'undefined' && Ultraviolet.codec && Ultraviolet.codec.xor) {
           try {
             const decoded = Ultraviolet.codec.xor.decode(encodedUrl);
             return decoded;
           } catch (e) {
-            // If XOR decode fails, return the encoded URL
             return encodedUrl;
           }
         }
@@ -827,7 +812,6 @@
       }
     }
 
-    // Tab Management
     function createNewTab(url = 'embed.html#https://hyperion-assets.vercel.app/') {
       const tabId = ++tabCounter;
       const tab = {
@@ -897,12 +881,10 @@
             renderTabs();
           }
         } catch (e) {
-          // Cross-origin - can't access title
         }
       };
     }
 
-    // Navigation
     function goBack() {
       const activeTab = tabs.find(t => t.id === activeTabId);
       if (!activeTab || activeTab.historyIndex === 0) return;
@@ -950,7 +932,6 @@
 
       let url = input.trim();
 
-      // Check if it's a URL or search query
       if (!url.includes('.') && !url.startsWith('http')) {
         url = 'https://duckduckgo.com/?q=' + encodeURIComponent(url);
       } else if (!url.startsWith('http')) {
@@ -959,7 +940,6 @@
 
       const embedUrl = 'embed.html#' + url;
 
-      // Update history
       activeTab.history = activeTab.history.slice(0, activeTab.historyIndex + 1);
       activeTab.history.push(embedUrl);
       activeTab.historyIndex++;
@@ -980,7 +960,6 @@
       }
     }
 
-    // Bookmarks
     function toggleBookmark() {
       const activeTab = tabs.find(t => t.id === activeTabId);
       if (!activeTab) return;
@@ -1046,7 +1025,6 @@
       updateBookmarkButton();
     }
 
-    // Cloak
     function showCloakSettings() {
       closeAllMenus();
       document.getElementById('cloakTitle').value = localStorage.getItem('rainfall_cloak_title') || '';
@@ -1079,7 +1057,6 @@
       alert('Cloak applied successfully!');
     }
 
-    // Load cloak on startup
     window.addEventListener('load', () => {
       const savedTitle = localStorage.getItem('rainfall_cloak_title');
       const savedFavicon = localStorage.getItem('rainfall_cloak_favicon');
@@ -1096,7 +1073,6 @@
       }
     });
 
-    // DevTools
     function openDevTools() {
       closeAllMenus();
       const iframe = document.getElementById('browserFrame');
@@ -1111,7 +1087,6 @@
       }
     }
 
-    // Fullscreen
     function toggleFullscreen() {
       closeAllMenus();
       if (!document.fullscreenElement) {
@@ -1121,7 +1096,6 @@
       }
     }
 
-    // Settings
     function showSettings() {
       closeAllMenus();
       const currentBare = localStorage.getItem('rainfall_bare_server') || self.__uv$config.bare;
@@ -1134,7 +1108,6 @@
       if (bareUrl) {
         localStorage.setItem('rainfall_bare_server', bareUrl);
 
-        // Update the config
         self.__uv$config.bare = bareUrl;
 
         alert('Bare server updated! Please reload the page for changes to take effect.');
@@ -1149,7 +1122,6 @@
       }
     }
 
-    // Menu
     function toggleMenu() {
       const menu = document.getElementById('mainMenu');
       menu.classList.toggle('active');
@@ -1161,12 +1133,10 @@
       });
     }
 
-    // Modal
     function closeModal(modalId) {
       document.getElementById(modalId).classList.remove('active');
     }
 
-    // Click outside to close
     document.addEventListener('click', (e) => {
       if (!e.target.closest('.user-menu')) {
         closeAllMenus();
@@ -1177,7 +1147,6 @@
       }
     });
 
-    // Utility
     function escapeHtml(text) {
       const div = document.createElement('div');
       div.textContent = text;
