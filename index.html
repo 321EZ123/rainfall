@@ -36,7 +36,6 @@
       height: 100vh;
     }
 
-    /* Browser Container */
     .browser-container {
       display: flex;
       flex-direction: column;
@@ -44,7 +43,6 @@
       position: relative;
     }
 
-    /* Top Bar */
     .top-bar {
       display: flex;
       align-items: center;
@@ -161,7 +159,6 @@
       color: var(--text-primary);
     }
 
-    /* Tabs Bar */
     .tabs-bar {
       display: flex;
       background: var(--bg-secondary);
@@ -241,7 +238,6 @@
       color: #ff4444;
     }
 
-    /* Navigation Bar */
     .nav-bar {
       display: flex;
       align-items: center;
@@ -326,7 +322,6 @@
       color: var(--accent-green);
     }
 
-    /* Content Area */
     .content-area {
       flex: 1;
       background: var(--bg-primary);
@@ -341,7 +336,6 @@
       background: white;
     }
 
-    /* Dropdown Menu */
     .dropdown-menu {
       position: absolute;
       top: 100%;
@@ -388,7 +382,6 @@
       margin: 6px 0;
     }
 
-    /* Modal */
     .modal {
       position: fixed;
       top: 0;
@@ -556,7 +549,6 @@
       background: rgba(255, 0, 0, 0.4);
     }
 
-    /* Cloak Settings */
     .cloak-preview {
       padding: 12px;
       background: var(--bg-tertiary);
@@ -570,7 +562,6 @@
 </head>
 <body>
   <div class="browser-container">
-    <!-- Top Bar -->
     <div class="top-bar">
       <div class="logo">
         <div class="logo-icon"></div>
@@ -601,20 +592,14 @@
               <span class="menu-item-icon">⛶</span>
               <span>Fullscreen</span>
             </div>
-            <div class="menu-divider"></div>
-            <div class="menu-item" onclick="showSettings()">
-              <span class="menu-item-icon">⚙</span>
-              <span>Settings</span>
-            </div>
+            
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Tabs Bar -->
     <div class="tabs-bar" id="tabsBar"></div>
 
-    <!-- Navigation Bar -->
     <div class="nav-bar">
       <div class="nav-controls">
         <button class="nav-btn" id="backBtn" onclick="goBack()" disabled>←</button>
@@ -633,10 +618,8 @@
       </div>
     </div>
 
-    <!-- Content Area -->
     <div class="content-area" id="contentArea"></div>
 
-    <!-- Bookmarks Modal -->
     <div class="modal" id="bookmarksModal">
       <div class="modal-content">
         <div class="modal-header">
@@ -649,7 +632,6 @@
       </div>
     </div>
 
-    <!-- Cloak Settings Modal -->
     <div class="modal" id="cloakModal">
       <div class="modal-content">
         <div class="modal-header">
@@ -673,26 +655,7 @@
       </div>
     </div>
 
-    <!-- Settings Modal -->
-    <div class="modal" id="settingsModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2 class="modal-title">Settings</h2>
-          <button class="modal-close" onclick="closeModal('settingsModal')">×</button>
-        </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label class="form-label">Bare Server URL</label>
-            <input type="text" class="form-input" id="bareServerUrl" placeholder="https://example.com/bare/">
-          </div>
-          <button class="btn-primary" onclick="saveBareServer()">Save Settings</button>
-          <div class="cloak-preview" style="margin-top: 16px;">
-            Note: Changing the bare server requires a page reload to take effect.
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+    
 
   <script>
     let tabs = [];
@@ -706,7 +669,126 @@
       createNewTab();
       initUrlBarListeners();
       startUrlSync();
+      initPostMessageListener();
     };
+
+    function initPostMessageListener() {
+      window.addEventListener('message', (event) => {
+        if (isUrlBarFocused) return;
+
+        const data = event.data;
+
+        if (data && typeof data === 'object') {
+          const possibleUrl = data.url || data.href || data.location || data.value ||
+                              data.currentUrl || data.newUrl || data.pageUrl;
+          if (possibleUrl && typeof possibleUrl === 'string' && possibleUrl.startsWith('http')) {
+            updateUrlBarFromProxy(possibleUrl);
+          }
+
+          const possibleTitle = data.title || data.pageTitle || data.documentTitle;
+          if (possibleTitle && typeof possibleTitle === 'string') {
+            updateTabTitle(possibleTitle);
+          }
+
+          if (data.type === 'navigation' || data.type === 'navigate' || data.type === 'urlChange') {
+            const navUrl = data.url || data.to || data.destination;
+            if (navUrl) {
+              updateUrlBarFromProxy(navUrl);
+            }
+          }
+
+          if (data.__uv) {
+            if (data.__uv.url) updateUrlBarFromProxy(data.__uv.url);
+            if (data.__uv.title) updateTabTitle(data.__uv.title);
+          }
+        }
+
+        if (typeof data === 'string') {
+          if (data.startsWith('http://') || data.startsWith('https://')) {
+            updateUrlBarFromProxy(data);
+          }
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.url) updateUrlBarFromProxy(parsed.url);
+            if (parsed.title) updateTabTitle(parsed.title);
+          } catch (e) {}
+        }
+      });
+    }
+
+    function updateUrlBarFromProxy(url) {
+      const activeTab = tabs.find(t => t.id === activeTabId);
+      if (!activeTab) return;
+
+      const urlBar = document.getElementById('urlBar');
+      if (urlBar.value !== url) {
+        urlBar.value = url;
+
+        const newEmbedUrl = 'https://insanity-v1-release.netlify.app/static/embed.html#' + url;
+        if (activeTab.url !== newEmbedUrl) {
+          activeTab.url = newEmbedUrl;
+
+          activeTab.title = getTitleFromUrl(newEmbedUrl);
+          renderTabs();
+
+          if (activeTab.history[activeTab.historyIndex] !== newEmbedUrl) {
+            activeTab.history = activeTab.history.slice(0, activeTab.historyIndex + 1);
+            activeTab.history.push(newEmbedUrl);
+            activeTab.historyIndex++;
+            updateNavButtons();
+          }
+
+          updateBookmarkButton();
+        }
+      }
+    }
+
+    function updateTabTitle(title) {
+      const activeTab = tabs.find(t => t.id === activeTabId);
+      if (activeTab && title) {
+        activeTab.title = title;
+        renderTabs();
+      }
+    }
+
+    function getTitleFromUrl(url) {
+      try {
+        const actualUrl = url.replace('https://insanity-v1-release.netlify.app/static/embed.html#', '');
+        const urlObj = new URL(actualUrl);
+        const hostname = urlObj.hostname;
+
+        const titleMap = {
+          'hyperion-assets.vercel.app': 'Hyperion Assets',
+          'google.com': 'Google',
+          'www.google.com': 'Google',
+          'duckduckgo.com': 'DuckDuckGo',
+          'www.duckduckgo.com': 'DuckDuckGo',
+          'youtube.com': 'YouTube',
+          'www.youtube.com': 'YouTube',
+          'github.com': 'GitHub',
+          'www.github.com': 'GitHub',
+          'reddit.com': 'Reddit',
+          'www.reddit.com': 'Reddit',
+          'twitter.com': 'Twitter',
+          'x.com': 'X',
+          'wikipedia.org': 'Wikipedia',
+          'en.wikipedia.org': 'Wikipedia',
+        };
+
+        if (titleMap[hostname]) {
+          return titleMap[hostname];
+        }
+
+        let cleanHostname = hostname.replace(/^www\./, '');
+        const parts = cleanHostname.split('.');
+        if (parts.length > 1) {
+          cleanHostname = parts[0];
+        }
+        return cleanHostname.charAt(0).toUpperCase() + cleanHostname.slice(1);
+      } catch (e) {
+        return 'New Tab';
+      }
+    }
 
     function initUrlBarListeners() {
       const urlBar = document.getElementById('urlBar');
@@ -734,75 +816,182 @@
       if (!iframe) return;
 
       try {
-        let iframeSrc = iframe.contentWindow.location.href;
+        const iframeWin = iframe.contentWindow;
 
-        if (iframeSrc.includes('/rainfall/')) {
-          const parts = iframeSrc.split('/rainfall/');
-          if (parts.length > 1) {
-            const encodedUrl = parts[1];
-            const decodedUrl = decodeProxiedUrl(encodedUrl);
-            const urlBar = document.getElementById('urlBar');
+        try {
+          if (iframeWin.__uv$location && iframeWin.__uv$location.href) {
+            handleUrlUpdate(iframeWin.__uv$location.href, activeTab);
+            return;
+          }
+        } catch (e) {}
 
-            if (decodedUrl && urlBar.value !== decodedUrl) {
-              urlBar.value = decodedUrl;
+        try {
+          if (iframeWin.__uv && iframeWin.__uv.location && iframeWin.__uv.location.href) {
+            handleUrlUpdate(iframeWin.__uv.location.href, activeTab);
+            return;
+          }
+        } catch (e) {}
 
-              const newEmbedUrl = 'https://insanity-v1-release.netlify.app/static/embed.html#' + decodedUrl;
-              if (activeTab.url !== newEmbedUrl) {
-                activeTab.url = newEmbedUrl;
-
-                if (activeTab.history[activeTab.historyIndex] !== newEmbedUrl) {
-                  activeTab.history = activeTab.history.slice(0, activeTab.historyIndex + 1);
-                  activeTab.history.push(newEmbedUrl);
-                  activeTab.historyIndex++;
-                  updateNavButtons();
+        try {
+          const innerFrames = iframeWin.document.querySelectorAll('iframe');
+          for (const innerFrame of innerFrames) {
+            try {
+              const innerUrl = innerFrame.contentWindow.location.href;
+              if (innerUrl && !innerUrl.includes('about:blank')) {
+                const decodedUrl = tryDecodeProxyUrl(innerUrl);
+                if (decodedUrl) {
+                  handleUrlUpdate(decodedUrl, activeTab);
+                  return;
                 }
+              }
+            } catch (e) {}
 
-                updateBookmarkButton();
+            const innerSrc = innerFrame.getAttribute('src');
+            if (innerSrc) {
+              const decodedUrl = tryDecodeProxyUrl(innerSrc);
+              if (decodedUrl) {
+                handleUrlUpdate(decodedUrl, activeTab);
+                return;
               }
             }
           }
-        } else if (iframeSrc.includes('https://insanity-v1-release.netlify.app/static/embed.html#')) {
-          const actualUrl = iframeSrc.split('https://insanity-v1-release.netlify.app/static/embed.html#')[1];
-          if (actualUrl) {
-            const urlBar = document.getElementById('urlBar');
-            if (urlBar.value !== actualUrl) {
-              urlBar.value = actualUrl;
-              const newEmbedUrl = 'https://insanity-v1-release.netlify.app/static/embed.html#' + actualUrl;
-              if (activeTab.url !== newEmbedUrl) {
-                activeTab.url = newEmbedUrl;
-                updateBookmarkButton();
-              }
+        } catch (e) {}
+
+        try {
+          const currentLoc = iframeWin.location.href;
+          const decodedUrl = tryDecodeProxyUrl(currentLoc);
+          if (decodedUrl) {
+            handleUrlUpdate(decodedUrl, activeTab);
+            return;
+          }
+        } catch (e) {}
+
+        try {
+          const hash = iframeWin.location.hash;
+          if (hash && hash.length > 1) {
+            const hashContent = hash.substring(1);
+            if (hashContent.startsWith('http')) {
+              handleUrlUpdate(decodeURIComponent(hashContent), activeTab);
+              return;
             }
           }
-        }
+        } catch (e) {}
+
+        try {
+          const addressInputs = iframeWin.document.querySelectorAll('input[type="text"], input[type="url"], input.url-bar, input.address-bar, #url, #address, .url-input');
+          for (const input of addressInputs) {
+            if (input.value && input.value.startsWith('http')) {
+              handleUrlUpdate(input.value, activeTab);
+              return;
+            }
+          }
+        } catch (e) {}
+
+        try {
+          iframeWin.postMessage({ type: 'getUrl' }, '*');
+          iframeWin.postMessage({ type: 'url' }, '*');
+          iframeWin.postMessage('getUrl', '*');
+        } catch (e) {}
+
       } catch (e) {
         try {
-          const iframeSrc = iframe.getAttribute('src');
-          if (iframeSrc && iframeSrc.includes('https://insanity-v1-release.netlify.app/static/embed.html#')) {
-            const actualUrl = iframeSrc.split('https://insanity-v1-release.netlify.app/static/embed.html#')[1];
-            if (actualUrl) {
-              const urlBar = document.getElementById('urlBar');
-              const decodedUrl = decodeURIComponent(actualUrl);
-              if (urlBar.value !== decodedUrl) {
-                urlBar.value = decodedUrl;
-              }
-            }
-          }
-        } catch (err) {
-        }
+          iframe.contentWindow.postMessage({ type: 'getUrl' }, '*');
+          iframe.contentWindow.postMessage({ type: 'url' }, '*');
+        } catch (err) {}
       }
     }
 
-    function decodeProxiedUrl(encodedUrl) {
-      return encodedUrl;
+    function tryDecodeProxyUrl(url) {
+      if (!url) return null;
+
+      const serviceMatch = url.match(/\/service\/([a-zA-Z0-9%]+)/);
+      if (serviceMatch) {
+        try {
+          const encoded = decodeURIComponent(serviceMatch[1]);
+          const decoded = xorDecode(encoded);
+          if (decoded && decoded.startsWith('http')) {
+            return decoded;
+          }
+        } catch (e) {}
+      }
+
+      if (url.includes('http')) {
+        const hashIndex = url.indexOf('#');
+        if (hashIndex !== -1) {
+          const hashPart = url.substring(hashIndex + 1);
+          try {
+            const decoded = decodeURIComponent(hashPart);
+            if (decoded.startsWith('http')) {
+              return decoded;
+            }
+          } catch (e) {
+            if (hashPart.startsWith('http')) {
+              return hashPart;
+            }
+          }
+        }
+      }
+
+      const base64Match = url.match(/[A-Za-z0-9+/=]{20,}/);
+      if (base64Match) {
+        try {
+          const decoded = atob(base64Match[0]);
+          if (decoded.startsWith('http')) {
+            return decoded;
+          }
+        } catch (e) {}
+      }
+
+      return null;
+    }
+
+    function xorDecode(encoded) {
+      try {
+        let result = '';
+        for (let i = 0; i < encoded.length; i++) {
+          result += String.fromCharCode(encoded.charCodeAt(i) ^ 2);
+        }
+        return result;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function handleUrlUpdate(url, activeTab) {
+      if (!url || !activeTab) return;
+
+      const urlBar = document.getElementById('urlBar');
+      if (urlBar.value === url) return;
+
+      urlBar.value = url;
+
+      const newEmbedUrl = 'https://insanity-v1-release.netlify.app/static/embed.html#' + url;
+      if (activeTab.url !== newEmbedUrl) {
+        activeTab.url = newEmbedUrl;
+
+        activeTab.title = getTitleFromUrl(newEmbedUrl);
+        renderTabs();
+
+        if (activeTab.history[activeTab.historyIndex] !== newEmbedUrl) {
+          activeTab.history = activeTab.history.slice(0, activeTab.historyIndex + 1);
+          activeTab.history.push(newEmbedUrl);
+          activeTab.historyIndex++;
+          updateNavButtons();
+        }
+
+        updateBookmarkButton();
+      }
     }
 
     function createNewTab(url = 'https://insanity-v1-release.netlify.app/static/embed.html#https://hyperion-assets.vercel.app/') {
       const tabId = ++tabCounter;
+
+      const initialTitle = getTitleFromUrl(url);
+
       const tab = {
         id: tabId,
         url: url,
-        title: 'New Tab',
+        title: initialTitle,
         history: [url],
         historyIndex: 0
       };
@@ -858,16 +1047,85 @@
       `;
 
       const iframe = document.getElementById('browserFrame');
+
       iframe.onload = () => {
+        setTimeout(() => {
+          if (!isUrlBarFocused) {
+            syncUrlFromIframe();
+          }
+        }, 100);
+
+        setTimeout(() => {
+          if (!isUrlBarFocused) syncUrlFromIframe();
+        }, 500);
+
+        setTimeout(() => {
+          if (!isUrlBarFocused) syncUrlFromIframe();
+        }, 1000);
+
         try {
           const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
           if (iframeDoc && iframeDoc.title) {
-            activeTab.title = iframeDoc.title || 'New Tab';
+            activeTab.title = iframeDoc.title || getTitleFromUrl(activeTab.url);
             renderTabs();
           }
+
+          try {
+            iframe.contentWindow.addEventListener('hashchange', () => {
+              if (!isUrlBarFocused) {
+                syncUrlFromIframe();
+              }
+            });
+
+            iframe.contentWindow.addEventListener('popstate', () => {
+              if (!isUrlBarFocused) {
+                setTimeout(() => syncUrlFromIframe(), 50);
+              }
+            });
+
+            iframe.contentDocument.addEventListener('click', (e) => {
+              const link = e.target.closest('a');
+              if (link) {
+                setTimeout(() => {
+                  if (!isUrlBarFocused) syncUrlFromIframe();
+                }, 100);
+                setTimeout(() => {
+                  if (!isUrlBarFocused) syncUrlFromIframe();
+                }, 300);
+                setTimeout(() => {
+                  if (!isUrlBarFocused) syncUrlFromIframe();
+                }, 600);
+              }
+            });
+
+            iframe.contentDocument.addEventListener('submit', () => {
+              setTimeout(() => {
+                if (!isUrlBarFocused) syncUrlFromIframe();
+              }, 500);
+            });
+          } catch (accessErr) {}
+
         } catch (e) {
+          activeTab.title = getTitleFromUrl(activeTab.url);
+          renderTabs();
         }
       };
+
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.type === 'attributes' && mutation.attributeName === 'src') {
+            const newSrc = iframe.getAttribute('src');
+            if (newSrc && newSrc.includes('#')) {
+              const hashPart = newSrc.split('#')[1];
+              if (hashPart && hashPart.startsWith('http') && !isUrlBarFocused) {
+                updateUrlBarFromProxy(hashPart);
+              }
+            }
+          }
+        });
+      });
+
+      observer.observe(iframe, { attributes: true, attributeFilter: ['src'] });
     }
 
     function goBack() {
@@ -930,7 +1188,10 @@
       activeTab.historyIndex++;
       activeTab.url = embedUrl;
 
+      activeTab.title = getTitleFromUrl(embedUrl);
+
       renderContent();
+      renderTabs();
       updateNavButtons();
       updateUrlBar();
     }
@@ -1115,6 +1376,21 @@
       const div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
+    }
+
+    function loadBareServerSetting() {
+      const savedBareServer = localStorage.getItem('rainfall_bare_server');
+      if (savedBareServer) {
+        document.getElementById('bareServerUrl').value = savedBareServer;
+      }
+    }
+
+    function saveBareServer() {
+      const bareServerUrl = document.getElementById('bareServerUrl').value.trim();
+      if (bareServerUrl) {
+        localStorage.setItem('rainfall_bare_server', bareServerUrl);
+        alert('Bare server saved! Reload the page to apply changes.');
+      }
     }
   </script>
 </body>
