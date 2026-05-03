@@ -694,9 +694,6 @@
     </div>
   </div>
 
-  <script src="uv/uv.bundle.js"></script>
-  <script src="uv/uv.config.js"></script>
-  <script src="register-sw.js"></script>
   <script>
     let tabs = [];
     let activeTabId = null;
@@ -726,7 +723,7 @@
         if (!isUrlBarFocused) {
           syncUrlFromIframe();
         }
-      }, 100); 
+      }, 100);
     }
 
     function syncUrlFromIframe() {
@@ -749,7 +746,7 @@
             if (decodedUrl && urlBar.value !== decodedUrl) {
               urlBar.value = decodedUrl;
 
-              const newEmbedUrl = 'embed.html#' + decodedUrl;
+              const newEmbedUrl = 'https://insanity-v1-release.netlify.app/static/embed.html#' + decodedUrl;
               if (activeTab.url !== newEmbedUrl) {
                 activeTab.url = newEmbedUrl;
 
@@ -764,13 +761,13 @@
               }
             }
           }
-        } else if (iframeSrc.includes('embed.html#')) {
-          const actualUrl = iframeSrc.split('embed.html#')[1];
+        } else if (iframeSrc.includes('https://insanity-v1-release.netlify.app/static/embed.html#')) {
+          const actualUrl = iframeSrc.split('https://insanity-v1-release.netlify.app/static/embed.html#')[1];
           if (actualUrl) {
             const urlBar = document.getElementById('urlBar');
             if (urlBar.value !== actualUrl) {
               urlBar.value = actualUrl;
-              const newEmbedUrl = 'embed.html#' + actualUrl;
+              const newEmbedUrl = 'https://insanity-v1-release.netlify.app/static/embed.html#' + actualUrl;
               if (activeTab.url !== newEmbedUrl) {
                 activeTab.url = newEmbedUrl;
                 updateBookmarkButton();
@@ -781,8 +778,8 @@
       } catch (e) {
         try {
           const iframeSrc = iframe.getAttribute('src');
-          if (iframeSrc && iframeSrc.includes('embed.html#')) {
-            const actualUrl = iframeSrc.split('embed.html#')[1];
+          if (iframeSrc && iframeSrc.includes('https://insanity-v1-release.netlify.app/static/embed.html#')) {
+            const actualUrl = iframeSrc.split('https://insanity-v1-release.netlify.app/static/embed.html#')[1];
             if (actualUrl) {
               const urlBar = document.getElementById('urlBar');
               const decodedUrl = decodeURIComponent(actualUrl);
@@ -797,22 +794,10 @@
     }
 
     function decodeProxiedUrl(encodedUrl) {
-      try {
-        if (typeof Ultraviolet !== 'undefined' && Ultraviolet.codec && Ultraviolet.codec.xor) {
-          try {
-            const decoded = Ultraviolet.codec.xor.decode(encodedUrl);
-            return decoded;
-          } catch (e) {
-            return encodedUrl;
-          }
-        }
-        return encodedUrl;
-      } catch (e) {
-        return encodedUrl;
-      }
+      return encodedUrl;
     }
 
-    function createNewTab(url = 'embed.html#https://hyperion-assets.vercel.app/') {
+    function createNewTab(url = 'https://insanity-v1-release.netlify.app/static/embed.html#https://hyperion-assets.vercel.app/') {
       const tabId = ++tabCounter;
       const tab = {
         id: tabId,
@@ -938,7 +923,7 @@
         url = 'https://' + url;
       }
 
-      const embedUrl = 'embed.html#' + url;
+      const embedUrl = 'https://insanity-v1-release.netlify.app/static/embed.html#' + url;
 
       activeTab.history = activeTab.history.slice(0, activeTab.historyIndex + 1);
       activeTab.history.push(embedUrl);
@@ -955,7 +940,7 @@
       const urlBar = document.getElementById('urlBar');
 
       if (activeTab) {
-        const url = activeTab.url.replace('embed.html#', '');
+        const url = activeTab.url.replace('https://insanity-v1-release.netlify.app/static/embed.html#', '');
         urlBar.value = url;
       }
     }
@@ -964,7 +949,7 @@
       const activeTab = tabs.find(t => t.id === activeTabId);
       if (!activeTab) return;
 
-      const url = activeTab.url.replace('embed.html#', '');
+      const url = activeTab.url.replace('https://insanity-v1-release.netlify.app/static/embed.html#', '');
       const existingIndex = bookmarks.findIndex(b => b.url === url);
 
       if (existingIndex >= 0) {
@@ -985,7 +970,7 @@
       const bookmarkBtn = document.getElementById('bookmarkBtn');
 
       if (activeTab) {
-        const url = activeTab.url.replace('embed.html#', '');
+        const url = activeTab.url.replace('https://insanity-v1-release.netlify.app/static/embed.html#', '');
         const isBookmarked = bookmarks.some(b => b.url === url);
         bookmarkBtn.textContent = isBookmarked ? '★' : '☆';
         bookmarkBtn.classList.toggle('bookmarked', isBookmarked);
@@ -1098,28 +1083,7 @@
 
     function showSettings() {
       closeAllMenus();
-      const currentBare = localStorage.getItem('rainfall_bare_server') || self.__uv$config.bare;
-      document.getElementById('bareServerUrl').value = currentBare;
       document.getElementById('settingsModal').classList.add('active');
-    }
-
-    function saveBareServer() {
-      const bareUrl = document.getElementById('bareServerUrl').value.trim();
-      if (bareUrl) {
-        localStorage.setItem('rainfall_bare_server', bareUrl);
-
-        self.__uv$config.bare = bareUrl;
-
-        alert('Bare server updated! Please reload the page for changes to take effect.');
-        closeModal('settingsModal');
-      }
-    }
-
-    function loadBareServerSetting() {
-      const savedBare = localStorage.getItem('rainfall_bare_server');
-      if (savedBare && self.__uv$config) {
-        self.__uv$config.bare = savedBare;
-      }
     }
 
     function toggleMenu() {
