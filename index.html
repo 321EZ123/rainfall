@@ -724,7 +724,7 @@
       if (urlBar.value !== url) {
         urlBar.value = url;
 
-        const newEmbedUrl = 'https://ha.kujaeelghs.com/embed.html#' + url;
+        const newEmbedUrl = 'https://rainfall-backend-1.thuexetaxi.com/embed.html#' + url;
         if (activeTab.url !== newEmbedUrl) {
           activeTab.url = newEmbedUrl;
 
@@ -753,7 +753,7 @@
 
     function getTitleFromUrl(url) {
       try {
-        const actualUrl = url.replace('https://ha.kujaeelghs.com/embed.html#', '');
+        const actualUrl = url.replace('https://rainfall-backend-1.thuexetaxi.com/embed.html#', '');
         const urlObj = new URL(actualUrl);
         const hostname = urlObj.hostname;
 
@@ -965,7 +965,7 @@
 
       urlBar.value = url;
 
-      const newEmbedUrl = 'https://ha.kujaeelghs.com/embed.html#' + url;
+      const newEmbedUrl = 'https://rainfall-backend-1.thuexetaxi.com/embed.html#' + url;
       if (activeTab.url !== newEmbedUrl) {
         activeTab.url = newEmbedUrl;
 
@@ -983,7 +983,7 @@
       }
     }
 
-    function createNewTab(url = 'https://ha.kujaeelghs.com/embed.html#https://hyperion-assets.vercel.app/') {
+    function createNewTab(url = 'https://rainfall-backend-1.thuexetaxi.com/embed.html#https://hyperion-assets.vercel.app/') {
       const tabId = ++tabCounter;
 
       const initialTitle = getTitleFromUrl(url);
@@ -1181,7 +1181,7 @@
         url = 'https://' + url;
       }
 
-      const embedUrl = 'https://ha.kujaeelghs.com/embed.html#' + url;
+      const embedUrl = 'https://rainfall-backend-1.thuexetaxi.com/embed.html#' + url;
 
       activeTab.history = activeTab.history.slice(0, activeTab.historyIndex + 1);
       activeTab.history.push(embedUrl);
@@ -1201,7 +1201,7 @@
       const urlBar = document.getElementById('urlBar');
 
       if (activeTab) {
-        const url = activeTab.url.replace('https://ha.kujaeelghs.com/embed.html#', '');
+        const url = activeTab.url.replace('https://rainfall-backend-1.thuexetaxi.com/embed.html#', '');
         urlBar.value = url;
       }
     }
@@ -1210,7 +1210,7 @@
       const activeTab = tabs.find(t => t.id === activeTabId);
       if (!activeTab) return;
 
-      const url = activeTab.url.replace('https://ha.kujaeelghs.com/embed.html#', '');
+      const url = activeTab.url.replace('https://rainfall-backend-1.thuexetaxi.com/embed.html#', '');
       const existingIndex = bookmarks.findIndex(b => b.url === url);
 
       if (existingIndex >= 0) {
@@ -1231,7 +1231,7 @@
       const bookmarkBtn = document.getElementById('bookmarkBtn');
 
       if (activeTab) {
-        const url = activeTab.url.replace('https://ha.kujaeelghs.com/embed.html#', '');
+        const url = activeTab.url.replace('https://rainfall-backend-1.thuexetaxi.com/embed.html#', '');
         const isBookmarked = bookmarks.some(b => b.url === url);
         bookmarkBtn.textContent = isBookmarked ? '★' : '☆';
         bookmarkBtn.classList.toggle('bookmarked', isBookmarked);
